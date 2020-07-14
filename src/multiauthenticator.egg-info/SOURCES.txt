@@ -1,0 +1,8 @@
+setup.py
+src/multiauth/__init__.py
+src/multiauth/multiauth.py
+src/multiauthenticator.egg-info/PKG-INFO
+src/multiauthenticator.egg-info/SOURCES.txt
+src/multiauthenticator.egg-info/dependency_links.txt
+src/multiauthenticator.egg-info/requires.txt
+src/multiauthenticator.egg-info/top_level.txt
