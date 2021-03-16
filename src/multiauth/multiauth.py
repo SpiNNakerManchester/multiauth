@@ -35,7 +35,8 @@ class MultiLoginHandler(LoginHandler):
             custom_html=self.authenticator.custom_html,
             login_url=self.settings['login_url'],
             login_services=self.authenticator.login_services(
-                self.hub.base_url, next)
+                self.hub.base_url, next),
+            first_use_enabled=self.authenticator.first_use_enabled
         )
 
 class MultiLogoutHandler(LogoutHandler):
@@ -65,6 +66,12 @@ class MultiAuthenticator(Authenticator):
 
     hbp_prefix = Unicode("hbp", help='The path to the HBP service', config=True)
     ebrains_prefix = Unicode("ebrains", help='The path to the EBrains service', config=True)
+
+    first_use_enabled = Bool(
+        False,
+        config=True,
+        help="Allow first-use authentication",
+    )
 
     @default('first_use_auth')
     def _default_first_use_auth(self):
@@ -146,7 +153,7 @@ class MultiAuthenticator(Authenticator):
 
     def __prepend_urls(self, urls, pre):
         preurls = [("/" + pre + url, handler) for url, handler in urls]
-        self.log.info("Original Urls: {} Prefix: {} Prepended urls: {}".format(urls, pre, preurls))
+        # self.log.info("Original Urls: {} Prefix: {} Prepended urls: {}".format(urls, pre, preurls))
         return preurls
 
     def get_handlers(self, app):
@@ -158,7 +165,8 @@ class MultiAuthenticator(Authenticator):
         ebrains_handlers = self.ebrains_auth.get_handlers(app)
         h.extend(self.__prepend_urls(hbp_handlers, self.hbp_prefix))
         h.extend(self.__prepend_urls(ebrains_handlers, self.ebrains_prefix))
-        h.extend(self.first_use_auth.get_handlers(app))
+        if self.first_use_enabled:
+            h.extend(self.first_use_auth.get_handlers(app))
         self.log.info("Handlers: {}".format(h))
         return h
 
@@ -182,7 +190,7 @@ class MultiAuthenticator(Authenticator):
             result = await self.hbp_auth.authenticate(handler, data)
         elif self.ebrains_prefix in handler.request.path:
             result = await self.ebrains_auth.authenticate(handler, data)
-        else:
+        elif self.first_use_enabled:
             result = await self.first_use_auth.authenticate(handler, data)
 
         # If error, return
