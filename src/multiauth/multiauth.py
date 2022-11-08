@@ -60,6 +60,14 @@ class MultiAuthenticator(Authenticator):
         config=True,
         help="""The file path where the user persistent files will be stored""")
 
+    user_data_user = Unicode(
+        config=True,
+        help="""The user id of the user that will own the user data folder""")
+
+    user_data_group = Unicode(
+        config=True,
+        help="""The group id of the group that will own the user data folder""")
+
     first_use_auth = Instance(Authenticator)
     hbp_auth = Instance(Authenticator)
     ebrains_auth = Instance(Authenticator)
@@ -205,7 +213,7 @@ class MultiAuthenticator(Authenticator):
         user_persist_data = os.path.join(self.user_data_location, escaped_name)
         self._mkdir(user_persist_data)
         subprocess.run([
-            "sudo", "chown", "1000:100", user_persist_data
+            "sudo", "chown", self.user_data_user + ":" + self.user_data_group, user_persist_data
         ])
 
         return result
