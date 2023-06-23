@@ -44,6 +44,7 @@ class MultiLogoutHandler(LogoutHandler):
         user = self.get_current_user()
         if user.spawner is not None and user.spawner.active:
             user.spawner.stop()
+        self.authenticator.user_logout(user)
         if user:
             self.log.info("User logged out: %s", user.name)
             self.clear_login_cookie()
@@ -136,9 +137,9 @@ class MultiAuthenticator(Authenticator):
         if handler is None:
             raise ValueError("There must be a handler!")
 
-        if self.hbp_prefix in handler.request.path:
-            self.set_oauth_tokens(self.hbp_auth)
-            return self.hbp_auth.get_callback_url(handler)
+        # if self.hbp_prefix in handler.request.path:
+        #    self.set_oauth_tokens(self.hbp_auth)
+        #    return self.hbp_auth.get_callback_url(handler)
         if self.ebrains_prefix in handler.request.path:
             self.set_oauth_tokens(self.ebrains_auth)
             return self.ebrains_auth.get_callback_url(handler)
@@ -154,9 +155,10 @@ class MultiAuthenticator(Authenticator):
     def login_services(self, base_url, next):
         return [
             (self.ebrains_auth.login_service, self.__get_login_url(
-                self.ebrains_auth, self.ebrains_prefix, base_url, next)),
-            (self.hbp_auth.login_service, self.__get_login_url(
-                self.hbp_auth, self.hbp_prefix, base_url, next))
+                self.ebrains_auth, self.ebrains_prefix, base_url, next))
+            # ,
+            # (self.hbp_auth.login_service, self.__get_login_url(
+            #     self.hbp_auth, self.hbp_prefix, base_url, next))
         ]
 
     def __prepend_urls(self, urls, pre):
@@ -169,9 +171,9 @@ class MultiAuthenticator(Authenticator):
             ('/login', MultiLoginHandler),
             ('/logout', MultiLogoutHandler),
         ]
-        hbp_handlers = self.hbp_auth.get_handlers(app)
+        # hbp_handlers = self.hbp_auth.get_handlers(app)
         ebrains_handlers = self.ebrains_auth.get_handlers(app)
-        h.extend(self.__prepend_urls(hbp_handlers, self.hbp_prefix))
+        # h.extend(self.__prepend_urls(hbp_handlers, self.hbp_prefix))
         h.extend(self.__prepend_urls(ebrains_handlers, self.ebrains_prefix))
         if self.first_use_enabled:
             h.extend(self.first_use_auth.get_handlers(app))
@@ -217,3 +219,7 @@ class MultiAuthenticator(Authenticator):
         ])
 
         return result
+
+    def user_logout(self, user):
+        self.log.info("Spawner stopped for user {}".format(user))
+        self.ebrains_auth.user_logout(user.name)
